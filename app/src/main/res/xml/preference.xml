@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="preference_network_speed_enable"
+        android:summaryOff="关闭"
+        android:summaryOn="开启"
+        android:title="显示网速速率" />
+
+    <ListPreference
+        android:defaultValue="2000"
+        android:entries="@array/network_speed_check_delay_title"
+        android:entryValues="@array/network_speed_check_delay_values"
+        android:key="preference_network_speed_check_delay"
+        android:summary="当面间隔: 500ms"
+        android:title="检测网速间隔" />
+
+</PreferenceScreen>

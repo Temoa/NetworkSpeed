@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">NetworkSpeed</string>
+    <string-array name="network_speed_check_delay_title">
+        <item>500ms</item>
+        <item>1s</item>
+        <item>2s</item>
+    </string-array>
+
+    <string-array name="network_speed_check_delay_values">
+        <item>500</item>
+        <item>1000</item>
+        <item>2000</item>
+    </string-array>
+
+    <string-array name="network_speed_check_delay_default_values">
+        <item>2000</item>
+    </string-array>
+</resources>

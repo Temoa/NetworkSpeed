@@ -29,7 +29,7 @@ class NetworkSpeedService : Service() {
 
     private var mLastTotalRxBytes: Long = 0
     private var mLastTimeStamp: Long = 0
-    private var mLastSpeed: Long = 0;
+    private var mLastSpeed: Long = 0
     private val totalRxBytes: Long
         get() =
             if (TrafficStats.getUidRxBytes(applicationInfo.uid) == TrafficStats.UNSUPPORTED.toLong()) 0

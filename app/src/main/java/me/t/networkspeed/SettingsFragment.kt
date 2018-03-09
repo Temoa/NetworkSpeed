@@ -54,8 +54,7 @@ class SettingsFragment : PreferenceFragment() {
 
         if (enable) startService(mDelay.toLong())
 
-        val notice = "当前间隔: "
-        mDelayPreference.summary = notice + getDelayMessage(mDelay)
+        mDelayPreference.summary = getDelayMessage(mDelay)
 
         mEnablePreference.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
             val isEnable = newValue as Boolean
@@ -67,8 +66,10 @@ class SettingsFragment : PreferenceFragment() {
         }
 
         mDelayPreference.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, newValue ->
+            stopService()
             mDelay = newValue as String
-            preference.summary = notice + getDelayMessage(mDelay)
+            preference.summary = getDelayMessage(mDelay)
+            startService(mDelay.toLong())
             true
         }
     }
@@ -95,9 +96,9 @@ class SettingsFragment : PreferenceFragment() {
 
     private fun getDelayMessage(value: String): String {
         return when (value) {
-            "500" -> "500毫秒"
-            "1000" -> "1秒"
-            "2000" -> "2秒"
+            "500" -> "500ms"
+            "1000" -> "1s"
+            "2000" -> "2s"
             else -> ""
         }
     }

@@ -30,10 +30,7 @@ class NetworkSpeedService : Service() {
     private var mLastTotalRxBytes: Long = 0
     private var mLastTimeStamp: Long = 0
     private var mLastSpeed: Long = 0
-    private val totalRxBytes: Long
-        get() =
-            if (TrafficStats.getUidRxBytes(applicationInfo.uid) == TrafficStats.UNSUPPORTED.toLong()) 0
-            else TrafficStats.getTotalRxBytes() / 1024
+    private var mDelay: Long = 2000
 
     private lateinit var mTimer: Timer
     private lateinit var mTask: NetWorkSpeedTask
@@ -41,8 +38,6 @@ class NetworkSpeedService : Service() {
 
     private var mNotificationManager: NotificationManager? = null
     private lateinit var mNotificationPendingIntent: PendingIntent
-
-    private var mDelay: Long = 2000
 
     @SuppressLint("HandlerLeak")
     private val mHandler = object : Handler() {
@@ -61,7 +56,7 @@ class NetworkSpeedService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        mLastTotalRxBytes = totalRxBytes
+        mLastTotalRxBytes = getTotalRxBytes()
         mLastTimeStamp = System.currentTimeMillis()
     }
 
@@ -92,35 +87,45 @@ class NetworkSpeedService : Service() {
         super.onDestroy()
     }
 
+    private fun getTotalRxBytes(): Long {
+        return if (TrafficStats.getUidRxBytes(applicationInfo.uid) ==
+                TrafficStats.UNSUPPORTED.toLong()) 0
+        else TrafficStats.getTotalRxBytes()
+    }
+
     private fun showNetSpeed() {
-        val nowTotalRxBytes = totalRxBytes
+        val nowTotalRxBytes = getTotalRxBytes()
         val nowTimeStamp = System.currentTimeMillis()
-        // 毫秒转换
-        val speed = (nowTotalRxBytes - mLastTotalRxBytes) * 1000 / (nowTimeStamp - mLastTimeStamp)
-        if (speed == mLastSpeed) {
-            return
-        }
-        mLastSpeed = speed
-        mLastTimeStamp = nowTimeStamp
-        mLastTotalRxBytes = nowTotalRxBytes
+        val deltaBytes = nowTotalRxBytes - mLastTotalRxBytes
+        val deltaTime = nowTimeStamp - mLastTimeStamp
+        val speed = deltaBytes * 1000 / deltaTime
 
         val msg = mHandler.obtainMessage()
         msg.what = 100
-        if (speed >= 1000) {
-            var speed1 = speed / 1024f
-            speed1 = Math.round(speed1 * 10).toFloat() / 10
-            val targets = arrayOfNulls<String>(2)
-            targets[0] = speed1.toString()
-            targets[1] = "M/s"
-            msg.obj = targets
-        } else {
-            val targets = arrayOfNulls<String>(2)
-            targets[0] = speed.toString()
-            targets[1] = "K/s"
-            msg.obj = targets
+        val targets = arrayOfNulls<String>(2)
+        when {
+            speed >= 1000 * 1000 -> {
+                var speedOfM = speed / 1024F / 1024F
+                speedOfM = Math.round(speedOfM * 10).toFloat() / 10
+                targets[0] = speedOfM.toString()
+                targets[1] = "M/s"
+            }
+            speed >= 1000 -> {
+                val speedOfK = speed / 1024
+                targets[0] = speedOfK.toString()
+                targets[1] = "K/s"
+            }
+            else -> {
+                targets[0] = speed.toString()
+                targets[1] = "B/s"
+            }
         }
-
+        msg.obj = targets
         mHandler.sendMessage(msg)
+
+        mLastSpeed = speed
+        mLastTimeStamp = nowTimeStamp
+        mLastTotalRxBytes = nowTotalRxBytes
     }
 
     private fun drawNumberBitmap(speed: String, unit: String): Bitmap {
@@ -158,8 +163,8 @@ class NetworkSpeedService : Service() {
                 .setAutoCancel(false)
                 .setSmallIcon(Icon.createWithBitmap(bitmap))
                 .setVisibility(Notification.VISIBILITY_SECRET)
-                .setContentText("当前网速: " + speed + unit)
-                .setPriority(Notification.PRIORITY_MAX)
+                .setContentText("当前网速: $speed$unit")
+                .setPriority(Notification.PRIORITY_MIN)
                 .setWhen(System.currentTimeMillis())
                 .setContentIntent(mNotificationPendingIntent)
         startForeground(1001, builder.build())
@@ -170,7 +175,8 @@ class NetworkSpeedService : Service() {
     private fun createNotificationChannelId(speed: String, unit: String) {
         val id = "me.t.networkspeed.notification_id"
         val name = "NetworkSpeed"
-        val channel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH)
+        val channel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_MIN)
+        channel.lockscreenVisibility = Notification.VISIBILITY_SECRET
         if (mNotificationManager == null) {
             mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         }
@@ -204,8 +210,6 @@ class NetworkSpeedService : Service() {
         private val mWeakReference: WeakReference<NetworkSpeedService> = WeakReference(service)
         override fun run() {
             val service = mWeakReference.get()
-            service?.showNetSpeed()
-
             service?.let { service.showNetSpeed() }
         }
     }
